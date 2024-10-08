@@ -37,7 +37,7 @@ The Loan Fraud Detection System is a comprehensive tool designed to analyze loan
 ## Installation
 
 1. Clone the repository:
-   git clone https://github.com/FlameGreat-1/Loan-Fraud-Detection-System/edit/
+   git clone https://github.com/FlameGreat-1/Loan-Fraud-Detection-System
 
 
 2. Navigate to the project directory:
