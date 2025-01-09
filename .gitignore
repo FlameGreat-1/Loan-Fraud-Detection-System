@@ -1,1 +1,40 @@
-venv/ 
+# General
+.DS_Store
+*.log
+*.tmp
+*.temp
+
+# Backend (Django)
+Backend/__pycache__/
+Backend/*.pyc
+Backend/db.sqlite3
+Backend/media/
+Backend/static/
+Backend/.env
+
+# Frontend (React)
+Frontend/node_modules/
+Frontend/build/
+Frontend/.env
+Frontend/.env.local
+Frontend/.env.development.local
+Frontend/.env.test.local
+Frontend/.env.production.local
+Frontend/npm-debug.log*
+Frontend/yarn-debug.log*
+Frontend/yarn-error.log*
+
+# dotenv environment variables file
+.env
+*.env
+
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
