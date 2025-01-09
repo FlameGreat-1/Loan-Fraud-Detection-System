@@ -1,8 +1,5 @@
 
 # coding: utf-8
-
-# # PeerLoanKart - Loan Repayment Prediction Project
-
 # ***
 # _**Importing the required libraries & packages**_
 

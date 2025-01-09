@@ -14,6 +14,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import roc_curve, auc
 from xgboost import XGBClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from imblearn.over_sampling import SMOTE
@@ -51,6 +52,8 @@ class LoanFraudDetectionGUI:
         self.master.configure(bg='#f0f0f0')
         self.df = None
         self.create_widgets()
+        
+
 
     def create_widgets(self):
         title_label = tk.Label(self.master, text="Loan Fraud Detection System", font=("Arial", 20, "bold"), bg='#f0f0f0')
@@ -78,6 +81,7 @@ class LoanFraudDetectionGUI:
             "Visualizations": ScrollableFrame(self.notebook),
             "SMOTE Resampling": ScrollableFrame(self.notebook),
             "Model Results": ScrollableFrame(self.notebook),
+            "ROC Curves": ScrollableFrame(self.notebook),
             "Cross-Validation": ScrollableFrame(self.notebook),
             "Hyperparameter Tuning": ScrollableFrame(self.notebook),
             "Feature Importance": ScrollableFrame(self.notebook),
@@ -151,7 +155,7 @@ class LoanFraudDetectionGUI:
             text_widget = tk.Text(tab, height=5, width=100)
             text_widget.pack(pady=10)
             missing_before = self.df.isnull().sum()
-            self.df = self.df.dropna()  # or use appropriate imputation method
+            self.df = self.df.dropna()
             missing_after = self.df.isnull().sum()
             text_widget.insert(tk.END, f"Missing values before: {missing_before.sum()}\n")
             text_widget.insert(tk.END, f"Missing values after: {missing_after.sum()}\n")
@@ -262,6 +266,71 @@ class LoanFraudDetectionGUI:
         sns.heatmap(self.df.corr(), ax=ax, cmap='coolwarm', annot=True)
         ax.set_title('Correlation Heat Map')
         return fig
+    
+    def generate_roc_curves(self):
+        try:
+            tab = self.tabs["ROC Curves"].scrollable_frame
+        
+            X_train, X_test, y_train, y_test = train_test_split(self.X_resampled, self.y_resampled, test_size=0.3, random_state=42)
+        
+            models = {
+                'Logistic Regression': LogisticRegression(),
+                'Gaussian Naive Bayes': GaussianNB(),
+                'K-Nearest Neighbors': KNeighborsClassifier(),
+                'Support Vector Machine': SVC(probability=True),
+                'Decision Tree': DecisionTreeClassifier(),
+                'Random Forest': RandomForestClassifier(),
+                'XGBoost': XGBClassifier()
+            }
+        
+             # Combined plot
+            fig_combined, ax_combined = plt.subplots(figsize=(10, 8))
+        
+            for name, model in models.items():
+                model.fit(X_train, y_train)
+                y_pred_proba = model.predict_proba(X_test)[:, 1]
+                fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
+                roc_auc = auc(fpr, tpr)
+            
+                 # Individual plot
+                fig_individual, ax_individual = plt.subplots(figsize=(8, 6))
+                ax_individual.plot(fpr, tpr, lw=2, label=f'ROC curve (AUC = {roc_auc:.2f})')
+                ax_individual.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+                ax_individual.set_xlim([0.0, 1.0])
+                ax_individual.set_ylim([0.0, 1.05])
+                ax_individual.set_xlabel('False Positive Rate')
+                ax_individual.set_ylabel('True Positive Rate')
+                ax_individual.set_title(f'ROC Curve - {name}')
+                ax_individual.legend(loc="lower right")
+                self.display_figure(fig_individual, tab)
+            
+                  # Add to combined plot
+                ax_combined.plot(fpr, tpr, lw=2, label=f'{name} (AUC = {roc_auc:.2f})')
+        
+            ax_combined.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+            ax_combined.set_xlim([0.0, 1.0])
+            ax_combined.set_ylim([0.0, 1.05])
+            ax_combined.set_xlabel('False Positive Rate')
+            ax_combined.set_ylabel('True Positive Rate')
+            ax_combined.set_title('ROC Curves for All Models')
+            ax_combined.legend(loc="lower right")
+        
+            self.display_figure(fig_combined, tab)
+        
+             # Add save button
+            save_button = tk.Button(tab, text="Save ROC Curves", command=lambda: self.save_figure(fig_combined, "combined_roc_curves.png"))
+            save_button.pack(pady=10)
+        
+        except Exception as e:
+            print(f"Error in generate_roc_curves: {str(e)}")
+
+    def save_figure(self, fig, filename):
+        file_path = filedialog.asksaveasfilename(defaultextension=".png")
+        if file_path:
+            fig.savefig(file_path)
+            messagebox.showinfo("Success", f"Figure saved as {file_path}")
+
+
 
     def perform_smote_resampling(self):
         try:
@@ -310,7 +379,7 @@ class LoanFraudDetectionGUI:
                 'Logistic Regression': LogisticRegression(),
                 'Gaussian Naive Bayes': GaussianNB(),
                 'K-Nearest Neighbors': KNeighborsClassifier(),
-                'Support Vector Machine': SVC(),
+                'Support Vector Machine': SVC(probability=True),  
                 'Decision Tree': DecisionTreeClassifier(),
                 'Random Forest': RandomForestClassifier(),
                 'XGBoost': XGBClassifier()
@@ -336,6 +405,11 @@ class LoanFraudDetectionGUI:
                 ax.set_ylabel('Actual')
                 ax.set_title(f'Confusion Matrix - {name}')
                 self.display_figure(fig, tab)
+
+              # After training all models and displaying results, generate ROC curves
+            self.generate_roc_curves()
+
+
 
         except Exception as e:
             print(f"Error in train_models: {str(e)}")
@@ -376,7 +450,7 @@ class LoanFraudDetectionGUI:
             # Prepare data
             X, y = self.X_resampled, self.y_resampled
 
-            # Define model and parameters for tuning (example with Random Forest)
+            # Define model and parameters for tuning
             model = RandomForestClassifier()
             param_grid = {
                 'n_estimators': [100, 200, 300],
